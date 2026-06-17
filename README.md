@@ -1,6 +1,5 @@
 # pact
-Python Antigenic Cartograpy Tools (PACT)
-This is an extension of Racmacs. Unlike Racmacs, it can work both on "square" titer tables (which has sera in columns
+Python Antigenic Cartograpy Tools (pact) is an extension of Racmacs. Unlike Racmacs, it can work both on "square" titer tables (which has sera in columns
 and antigens in rows) and "flat" titer tables which has columns 'antigen_id', 'serum_id', 'titer'. It handles multiple 
 repeats correctly without needing to merge them. There is also the option to add table_bias when there is table_id column 
 in the flat table. This is to be used for instance when you want to combine different tables from different sources which 
