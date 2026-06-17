@@ -1,0 +1,3 @@
+ 
+- check that removed points are printed correctly and have nan coordinates
+- check that removed/uncertain points are correct
