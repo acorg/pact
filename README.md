@@ -9,8 +9,9 @@ You can also allow antigen and serum avidity terms (called row and column avidit
 regularized, see gradient_MDS for details. Default is that there is no row,column avidity or table bias. See tests folder
 for details.
 
-The stress function used is equivalent to Racmacs apart from the fact that it sums over repeats and it has
-regularization terms if row,col avidities and table bias is added.
+The stress function used is equivalent to Racmacs if row/col avidity and table bias terms are not used. If
+these are included, they get added to the estimated titer in the expected way and are regularized whose parameters
+are determined by the prior input to the optimizers (see gradient_MDS for details).
 
 # Installation
 You should be to install this with this pip on linux, macos or windows provided you have a C compiler available.
