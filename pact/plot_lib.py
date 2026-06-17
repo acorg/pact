@@ -27,10 +27,6 @@ except (ModuleNotFoundError, PackageNotInstalledError):
 from copy import deepcopy
 
 
-# ---------------------------------------------------------------------------
-# Plotly view
-# ---------------------------------------------------------------------------
-
 _SHAPE_MAP = {
     "circle":   "circle",
     "box":      "square",

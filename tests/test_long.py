@@ -77,9 +77,13 @@ if __name__ == "__main__":
     acmap.ag_names = [ag_id_to_name[x] for x in acmap.ag_ids]
     acmap.sr_names = [sr_id_to_name[x] for x in acmap.sr_ids]
     
+    # just showing how to create a racmap object from PyRacmacs, but is not necessary for plotting
+    # the object m below is sufficient
     new_map = pact.plot_lib.make_racmap(acmap, res2)
+    
     ag_years = [_get_year(x) for x in new_map.ag_names]
     sr_years = [_get_year(x) for x in new_map.sr_names]
+    
     m = pact.Map.from_result(res2)
     m.ag_coloring = {"Year":ag_years}
     m.sr_coloring = {"Year":sr_years}
