@@ -3,12 +3,15 @@ Python Antigenic Cartograpy Tools (PACT)
 This is an extension of Racmacs. Unlike Racmacs, it can work both on "square" titer tables (which has sera in columns
 and antigens in rows) and "flat" titer tables which has columns 'antigen_id', 'serum_id', 'titer'. It handles multiple 
 repeats correctly without needing to merge them. There is also the option to add table_bias when there is table_id column 
-in the flat table. This is to be used for instance when you want to merge different tables from different sources which 
-you think might have overall titer magnitude differences. You can also use it for other purposes such as trying to merge 
+in the flat table. This is to be used for instance when you want to combine different tables from different sources which 
+you think might have overall titer magnitude differences. You can also use it for other purposes such as trying to combine 
 two results using different cell types / assay types where you suspect only difference is in magnitude and not fold-drop. 
 You can also allow antigen and serum avidity terms (called row and column avidity in the package). These parameters are 
 regularized, see gradient_MDS for details. Default is that there is no row,column avidity or table bias. See tests folder
 for details.
+
+The stress function used is equivalent to Racmacs apart from the fact that it sums over repeats and it has
+regularization terms if row,col avidities and table bias is added.
 
 # Installation
 You should be to install this with this pip on linux, macos or windows provided you have a C compiler available.
