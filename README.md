@@ -22,7 +22,7 @@ optionally used in some of the tests to compare results to Racmacs.
 # Tests
 There are three tests. test_benchmark compares two different optimizations routines in pact against Racmacs (requires PyRacmacs),
 test_global_minima.py evaluates global optima finding success of pact and finally test_long.py tests pact on a larger version
-of the 2004 map which has extra data and repeats are not averaged.
+of the 2004 map which has extra data and repeats are not averaged (warning: this is unpublished data).
 
 # Visualization
 If you have PyRacmacs then pact can connect to it to produce maps ala Racmacs viewer. Otherwise you can also
