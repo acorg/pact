@@ -6,6 +6,7 @@ Created on Tue Jun  2 15:58:19 2026
 @author: avicenna
 """
 import numpy as np
+import pandas as pd
 from dataclasses import dataclass
 
 
@@ -420,7 +421,6 @@ class Map:
         if unknown_sr:
             raise ValueError(f"Unknown serum names: {sorted(unknown_sr)}")
 
-        # Preserve alphabetical order (consistent with np.unique)
         new_ag_names = [n for n in self.ag_names if n in keep_ag]
         new_sr_names = [n for n in self.sr_names if n in keep_sr]
 
@@ -438,10 +438,12 @@ class Map:
         ].copy()
 
         new_ls = dict(self.level_sets) if self.level_sets else {}
-        new_ls["ag_name"] = np.unique(new_table['antigen'].values)
-        new_ls["sr_name"] = np.unique(new_table['serum'].values)
-        new_ls["ag_id"]   = np.unique(new_table['antigen_id'].values)
-        new_ls["sr_id"]   = np.unique(new_table['serum_id'].values)
+        new_ls["ag_name"] = np.array(new_ag_names)
+        new_ls["sr_name"] = np.array(new_sr_names)
+        new_ls["ag_id"] = pd.unique(new_table['antigen_id'].values)
+        new_ls["sr_id"] = pd.unique(new_table['serum_id'].values)
+
+
 
         new_row_av = None
         if len(self.row_avidities) > 0:

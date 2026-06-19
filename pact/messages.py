@@ -19,7 +19,10 @@ def reset_warnings():
     _shown.clear()
 
 
-def print_coordination_problems(poorly_coordinated, uncoordinated, ndim):
+def print_coordination_problems(poorly_coordinated, uncoordinated, ndim, verbose):
+  
+  if not verbose:
+    return
   
   for name in poorly_coordinated["ag"]:
       warn_once(("uncertain_antigen", name),

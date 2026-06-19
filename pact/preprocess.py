@@ -28,7 +28,8 @@ def prep_table(table, col_bases=None, min_col_basis=None):
                    "with antigens as index and sera as columns")
 
 
-def prep_inputs(table, mds_result, col_bases=None, min_col_basis=None):
+def prep_inputs(table, mds_result, col_bases=None, min_col_basis=None,
+                verbose=True):
 
   table = prep_table(table, col_bases, min_col_basis)
 
@@ -38,13 +39,14 @@ def prep_inputs(table, mds_result, col_bases=None, min_col_basis=None):
       
     mds_result["uncoordinated"] = uncoordinated
     mds_result["poorly_coordinated"] = poor
-    print_coordination_problems(poor, uncoordinated, mds_result["args"]["dim"])
+    print_coordination_problems(poor, uncoordinated, mds_result["args"]["dim"],
+                                verbose)
   else:
     mds_result["uncoordinated"] = {"ag":[], "sr":[]}
     mds_result["poorly_coordinated"] = {"ag":[], "sr":[]}
 
   
-  # Validate: same ID must always map to the same name
+  #checking that same ID must always map to the same name
   ag_id_name = table[['antigen_id', 'antigen']].drop_duplicates()
   if ag_id_name['antigen_id'].duplicated().any():
       bad = ag_id_name[ag_id_name['antigen_id'].duplicated(keep=False)].values.tolist()
@@ -57,9 +59,12 @@ def prep_inputs(table, mds_result, col_bases=None, min_col_basis=None):
   indices = {}
   n = {}
   level_sets = {}
-  # Name-based coordinate indices (same name -> same coordinate slot)
-  unique_ag_names, row_coord_inv = np.unique(table['antigen'].values, return_inverse=True)
-  unique_sr_names, col_coord_inv = np.unique(table['serum'].values, return_inverse=True)
+  
+  # Name-based coordinate indices, name order is kept so if the input was
+  # a wide table it will be the same serum (column) and antigen (row) order
+  # as the original table.
+  row_coord_inv, unique_ag_names = pd.factorize(table['antigen'].values, sort=False)
+  col_coord_inv, unique_sr_names = pd.factorize(table['serum'].values, sort=False)
   indices["row_coord"] = row_coord_inv.astype('i')
   indices["col_coord"] = col_coord_inv.astype('i')
   
@@ -69,7 +74,7 @@ def prep_inputs(table, mds_result, col_bases=None, min_col_basis=None):
   n["sr_names"] = unique_sr_names
   n["total"] = n["row_names"] + n["col_names"]
 
-  # ID-based avidity indices (one avidity term per unique ID)
+  # ID-based avidity indices 
   unique_ags, row_inv = np.unique(table['antigen_id'].values, return_inverse=True)
   unique_srs, col_inv = np.unique(table['serum_id'].values, return_inverse=True)
   indices["row"] = row_inv.astype('i')
@@ -104,7 +109,7 @@ def prep_inputs(table, mds_result, col_bases=None, min_col_basis=None):
   level_sets["sr_id"] = unique_srs
   level_sets["table_id"] = unique_table_ids
   mds_result["level_sets"] = level_sets
-  
+
   return table, n, indices, coordinate_bounds, mds_result
 
 
@@ -159,17 +164,20 @@ def supress_params_for_uncoordinated(mds_result):
 def melt_table(titer_table):
 
   titer_table = titer_table.copy()
-
   titer_table.index.name="antigen"
   titer_table.columns.name="serum"
+  
+  antigens = list(titer_table.index)     
+  sera     = list(titer_table.columns)  
+
+  
   titer_table = titer_table.reset_index()
   table_flat = pd.melt(titer_table, id_vars="antigen",
                        var_name="serum", value_name="titer")
 
   table_flat = table_flat.assign(table_id=0)
 
-  antigens = sorted(table_flat["antigen"].unique())
-  sera = sorted(table_flat["serum"].unique())
+ 
   antigen_idx = {ag: i for i, ag in enumerate(antigens)}
   serum_idx  = {sr: j for j, sr in enumerate(sera)}
   table_flat["antigen_id"] = table_flat["antigen"].map(antigen_idx).astype("i")

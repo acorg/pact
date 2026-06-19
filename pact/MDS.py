@@ -6,8 +6,9 @@ Created on Sat Jun  4 12:26:11 2022
 @author: Sina Tureli
 """
 
-import numpy as np
 import tqdm
+import numpy as np
+import pandas as pd
 from scipy.sparse.linalg import eigsh
 from scipy.optimize import minimize
 from multiprocessing import Pool
@@ -16,14 +17,14 @@ from functools import partial
 from . import calculus
 from .preprocess import prep_inputs, prep_table, supress_params_for_uncoordinated
 from .objects import _AvidityParams
-
+from .messages import warn_once
 
 def gradient_MDS(table, dim, initial_configurations, is_discrete,
                  method='L-BFGS-B', minimize_options=None, offset_penalty_scales=1,
                  row_avidity_on=False, col_avidity_on=False, table_bias_on=False, 
                  avidity_options=None, coordinate_bounds=None, supress_uncoordinated=True, 
-                 col_bases=None, min_col_basis=None, num_cpus=1, hide_progress_bar=False,
-                 seed=0):
+                 col_bases=None, min_col_basis=None, num_cpus=1, 
+                 hide_progress_bar=False, verbose=True, seed=0):
 
     '''
     Run gradient-based MDS on each initial configuration and return all
@@ -104,6 +105,8 @@ def gradient_MDS(table, dim, initial_configurations, is_discrete,
         Number of worker processes.  1 runs serially.
     hide_progress_bar : bool
         Suppress the tqdm progress bar.
+    verbose : bool
+        Show or suppress warning messages.
     seed: int 
         Used for random generation of initial configurations if initial_configurations
         is an int.
@@ -139,9 +142,12 @@ def gradient_MDS(table, dim, initial_configurations, is_discrete,
               "initial_configurations":initial_configurations,
               "dim":dim,
               "table":table,
-              "seed":seed
+              "verbose":verbose,
+              "seed":seed,
+              "num_cpus":num_cpus,
               }
       }
+    
 
     if isinstance(initial_configurations, int):
       initial_configurations=\
@@ -161,7 +167,8 @@ def gradient_MDS(table, dim, initial_configurations, is_discrete,
                                "table": offset_penalty_scales}
 
     table, n, indices, coordinate_bounds, mds_result =\
-      prep_inputs(table, mds_result, col_bases=col_bases, min_col_basis=min_col_basis)
+      prep_inputs(table, mds_result, col_bases=col_bases, min_col_basis=min_col_basis,
+                  verbose=verbose)
       
     target_distances_flat = table['target_distances'].values.astype(np.double)
     distance_types_flat = table['distance_type'].values.astype('i')
@@ -187,10 +194,10 @@ def gradient_MDS(table, dim, initial_configurations, is_discrete,
         av_params, bounds)
 
     if num_cpus > 1:
-        with Pool(num_cpus) as p:
+        with Pool(num_cpus, initializer=_pool_init) as p:
             optim_results = list(tqdm.tqdm(p.imap(partial_parfun, initial_configurations),
-                                     total=len(initial_configurations),
-                                     disable=hide_progress_bar))
+                                 total=len(initial_configurations),
+                                 disable=hide_progress_bar))
     else:
         optim_results = []
         for configuration in tqdm.tqdm(initial_configurations, disable=hide_progress_bar):
@@ -198,16 +205,17 @@ def gradient_MDS(table, dim, initial_configurations, is_discrete,
                         
     mds_result.update({"optim_results": optim_results})
     
-    return _build_result(mds_result, n)
+    return _build_result(mds_result, n, verbose)
     
+
 
 def tolerance_annealing(table, dim, initial_configurations, is_discrete, 
                         ftols=None, refine_fractions=None, method='L-BFGS-B', 
                         minimize_options=None, offset_penalty_scales=1, row_avidity_on=False, 
                         col_avidity_on=False, table_bias_on=False, avidity_options=None, 
                         coordinate_bounds=None, supress_uncoordinated=True, col_bases=None, 
-                        min_col_basis=None,  num_cpus=1, hide_progress_bar=False,
-                        seed=0):
+                        min_col_basis=None,  num_cpus=1, hide_progress_bar=False, 
+                        seed=0, verbose=True):
     '''
     Multi-stage coarse-to-fine MDS optimisation that anneals on ftolerance parameter.
 
@@ -233,8 +241,8 @@ def tolerance_annealing(table, dim, initial_configurations, is_discrete,
         Length must equal len(ftols) - 1.  Default: [0.25].
     method, minimize_options, offset_penalty_scales, row_avidity_on, col_avidity_on, 
     table_bias_on, avidity_options, coordinate_bounds, supress_uncoordinated, col_bases,
-    min_col_basis, num_cpus, hide_progress_bar, seed are forwarded to gradient_MDS 
-    unchanged.
+    min_col_basis, num_cpus, hide_progress_bar, seed verbose are forwarded to 
+    gradient_MDS unchanged.
 
     Returns
     -------
@@ -286,7 +294,8 @@ def tolerance_annealing(table, dim, initial_configurations, is_discrete,
                               avidity_options=avidity_options,
                               coordinate_bounds=coordinate_bounds,
                               supress_uncoordinated=supress_uncoordinated,
-                              table_bias_on=table_bias_on)
+                              table_bias_on=table_bias_on,
+                              verbose=verbose)
         stage_results.append(result)
 
         if stage < len(ftols):
@@ -299,8 +308,8 @@ def tolerance_annealing(table, dim, initial_configurations, is_discrete,
     return stage_results
 
 
-def perturb_search(result, chunk_size=5, N=20, radius=10,
-                   num_cpus=1, hide_progress_bar=False):
+def perturb_search(result, chunk_size=5, N=20, radius=10, num_cpus=1, 
+                   hide_progress_bar=False):
     '''
     One greedy pass of block-coordinate perturbation descent.
 
@@ -328,7 +337,7 @@ def perturb_search(result, chunk_size=5, N=20, radius=10,
         Number of perturbations generated per point per chunk.
     radius : float
         Maximum perturbation displacement.
-    num_cpus, hide_progress_bar
+    num_cpus, hide_progress_bar, 
         Passed through to gradient_MDS unchanged.
 
     Returns
@@ -644,7 +653,7 @@ def _perturb_offsets(N, dim, radius, rng):
         return directions * r[:, np.newaxis]
 
 
-def _build_result(mds_result, n):
+def _build_result(mds_result, n, verbose):
   
   optim_results = [r for r in mds_result["optim_results"] if r['success']]
   row_avidity_on = mds_result["args"]["row_avidity_on"]
@@ -652,7 +661,7 @@ def _build_result(mds_result, n):
   table_bias_on = mds_result["args"]["table_bias_on"]
   
   if len(optim_results)==0:
-    print("Warning: none of the optim_results converged.")
+    print("Warning: none of the optim_results converged."*verbose)
     mds_result.update({"coordinates": [], "stresses": [], "optim_results": []})
 
     if row_avidity_on:
@@ -676,8 +685,29 @@ def _build_result(mds_result, n):
   p_col_av = p_row_av + (n["cols"] if col_avidity_on else 0)
 
   coordinates = [np.reshape(x[:p_coord], (n["total"], n["dim"])) for x in optimization_coordinates]
+  ag_names = mds_result["level_sets"]["ag_name"].tolist()
+  sr_names = mds_result["level_sets"]["sr_name"].tolist()
+  ndim = mds_result["args"]["dim"]
+  columns = ['x','y','z'][:ndim] if ndim<3 else [f"z_{i}" for i in range(ndim)]
+  
+  coordinate_dfs = [pd.DataFrame(c, index=ag_names+sr_names, columns=columns) 
+                    for c in coordinates]
+  ag_coordinate_dfs = [c.iloc[:len(ag_names),:] for c in coordinate_dfs]
+  sr_coordinate_dfs = [c.iloc[len(ag_names):,:] for c in coordinate_dfs]
+  
+  if len(set(ag_names)) != len(ag_names):
+    nonunique = [x for x in ag_names if list(ag_names).count(x)>1]
+    warn_once("Set of antigen names is not unique, ag_coordinates will have "
+              f"non-unique indices. Non-unique names: {nonunique}")
+  
+  if len(set(sr_names)) != len(sr_names):
+    nonunique = [x for x in sr_names if list(sr_names).count(x)>1]
+    warn_once("Set of antigen names is not unique, sr_coordinates will have "
+              f"non-unique indices. Non-unique names: {nonunique}")
 
   mds_result.update({"coordinates":          coordinates,
+                     "ag_coordinates":       ag_coordinate_dfs,
+                     "sr_coordinates":       sr_coordinate_dfs,
                      "stresses":             stresses,
                      "optim_results":        optim_results
                      })
@@ -851,4 +881,9 @@ def _parfun(target_distances, distance_types,
     return minimize(fun, np.array(x0), jac=True, method=method,
                     bounds=bounds, options=minimize_options)
 
+
+
+def _pool_init():
+      from threadpoolctl import threadpool_limits
+      threadpool_limits(limits=1, user_api='blas')
 
