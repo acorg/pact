@@ -11,7 +11,7 @@ try:
   from rpy2.robjects.packages import PackageNotInstalledError
   import PyRacmacs as pr
   _PR_EXISTS=True
-except (ModuleNotFoundError, PackageNotInstalledError):
+except Exception:  # rpy2/PyRacmacs optional; PackageNotInstalledError may be undefined here
   _PR_EXISTS=False
   print("Warning PyRacmacs not found will skip optimization with Racmacs.")
   
