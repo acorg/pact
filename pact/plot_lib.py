@@ -509,12 +509,12 @@ def view_racmacs(base_racmap: pr.RacMap, results: dict,
   
     if view_args is None:
         view_args = {}
-    new_map = make_racmap(base_racmap, results)
+    new_map = make_racmap_frombase(base_racmap, results)
     pr.view(new_map, **view_args)
     return new_map
 
 
-def make_racmap(base_map: pr.RacMap, results: dict, optim_number: int = 0):
+def make_racmap_frombase(base_map: pr.RacMap, results: dict, optim_number: int = 0):
 
     table = results["processed_table"]
 
