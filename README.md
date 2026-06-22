@@ -28,4 +28,9 @@ of the 2004 map which has extra data and repeats are not averaged (warning: this
 If you have PyRacmacs then pact can connect to it to produce maps ala Racmacs viewer. Otherwise you can also
 use dedicated view function to get a plotly plot where you can color antigens and sera by any observable that
 you supply to the map object (the options will appear as a roll down menu in the map). See test_long.py in tests
-for an example on how to use it. The viewing functionalities were created with Claude.
+for an example on how to use it. 
+
+# AI Statement
+The viewing functionalities were created with Claude. Some of the docstrings were created
+with Claude. Addition of table_bias terms was done with Claude. AI was used only 
+under human supervision (me).
