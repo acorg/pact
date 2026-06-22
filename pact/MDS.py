@@ -41,8 +41,9 @@ def gradient_MDS(table, dim, initial_configurations, is_discrete,
     ----------
     table : DataFrame
         Wide format (antigens as index, sera as columns) or long format with
-        columns 'antigen_id', 'serum_id', 'titer'.  Long format requires a
-        'table_id' column when table_bias_on=True.
+        columns 'antigen', 'serum', 'titer'.  Long format requires a
+        'table_id' column when table_bias_on=True, 'antigen_id' if row_avidity_on=True
+        and 'serum_id' of col_avidity=on True
     dim : int
         Number of spatial dimensions.
     initial_configurations : list of array-like or int
