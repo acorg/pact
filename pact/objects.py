@@ -9,6 +9,14 @@ import numpy as np
 import pandas as pd
 from dataclasses import dataclass
 
+try:
+  from rpy2.robjects.packages import PackageNotInstalledError
+  import PyRacmacs as pr
+  _PR_EXISTS=True
+except (ModuleNotFoundError, PackageNotInstalledError):
+  _PR_EXISTS=False
+  print("Warning PyRacmacs not found can't convert Map to Racmap.")
+
 
 _PALETTE = [
     "#CC0000", "#0055CC", "#007700", "#FF8800", "#8800AA",
@@ -487,6 +495,28 @@ class Map:
             new_map.sr_coloring = {k: [v[old_sr_pos[n]] for n in new_sr_names]
                                    for k, v in self.sr_coloring.items()}
         return new_map
+      
+    def convert_to_racmap(self, optims=None):
+      
+      racmap = pr.RacMap(ag_coords=self.ag_coords(0),
+                         sr_coords=self.sr_coords(0),
+                         ag_names=self.ag_names, 
+                         sr_names=self.sr_names)
+      
+      if optims is None:
+        optims = range(len(self.stresses))
+      
+      for optim in optims:
+        racmap=\
+          racmap.add_optimization(self.ag_coords(optim), 
+                                  self.sr_coords(optim),
+                                  self.dim)
+          
+      if len(list(optims))>1:
+        racmap = racmap.realign_optimizations()
+        
+      return racmap
+      
 
     def copy(self):
         '''
