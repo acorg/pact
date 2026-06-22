@@ -507,6 +507,10 @@ class Map:
         optims = range(len(self.stresses))
       
       for optim in optims:
+        
+        if optim==0: # zeroth optim is already written above
+          continue
+        
         racmap=\
           racmap.add_optimization(self.ag_coords(optim), 
                                   self.sr_coords(optim),
