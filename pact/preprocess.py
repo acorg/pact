@@ -13,6 +13,11 @@ from .messages import print_coordination_problems
 def prep_table(table, col_bases=None, min_col_basis=None):
 
   if isinstance(table, pd.DataFrame) and 'titer' not in table.columns:
+    
+    if any(x in table.columns for x in ["antigen_id","serum_id","antigen","serum"]):
+      print("Warning: It seems like you are trying to supply a non-wide table without titer values. "
+            "Will mosty likely lead to failure.")
+    
     table = melt_table(table) # will satisfy condition below automatically
 
   if isinstance(table, pd.DataFrame) and all(y in table.columns for y in
